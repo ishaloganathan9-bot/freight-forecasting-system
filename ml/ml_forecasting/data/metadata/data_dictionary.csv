@@ -1,0 +1,41 @@
+column_name,description,source_or_purpose
+Date,Monthly observation date,Freight and integrated dataset
+Freight_Index,Baltic Dry Index value used as the freight-market target,Freight data
+India_Dry_Cargo_Loaded,India dry cargo loaded indicator,UNCTAD trade data
+India_Dry_Cargo_Discharged,India dry cargo discharged indicator,UNCTAD trade data
+Chennai_Total_Traffic,Total cargo traffic handled by Chennai Port,Port traffic data
+Kamarajar_Total_Traffic,Total cargo traffic handled by Kamarajar Port,Port traffic data
+Paradip_Total_Traffic,Total cargo traffic handled by Paradip Port,Port traffic data
+SMP_Kolkata_Haldia_Total_Traffic,Total cargo traffic handled by Syama Prasad Mookerjee Port and Kolkata/Haldia,Port traffic data
+Visakhapatnam_Total_Traffic,Total cargo traffic handled by Visakhapatnam Port,Port traffic data
+Aluminum,Aluminum commodity price,World Bank Commodity Price Data
+"Coal, Australian",Australian coal commodity price,World Bank Commodity Price Data
+"Coal, South African **",South African coal commodity price,World Bank Commodity Price Data
+Copper,Copper commodity price,World Bank Commodity Price Data
+"Crude oil, Brent",Brent crude oil price,World Bank Commodity Price Data
+"Iron ore, cfr spot",Iron ore commodity price,World Bank Commodity Price Data
+"Natural gas, Europe",European natural gas price,World Bank Commodity Price Data
+Soybeans,Soybean commodity price,World Bank Commodity Price Data
+"Wheat, US HRW",US HRW wheat commodity price,World Bank Commodity Price Data
+Freight_Lag_1,Freight index value from the previous month,Feature engineering
+Freight_Lag_3,Freight index value from three months earlier,Feature engineering
+Freight_Lag_6,Freight index value from six months earlier,Feature engineering
+Freight_Lag_12,Freight index value from twelve months earlier,Feature engineering
+Freight_Rolling_Mean_3,Three-month historical rolling mean of freight index,Feature engineering
+Freight_Rolling_Mean_6,Six-month historical rolling mean of freight index,Feature engineering
+Freight_Rolling_Mean_12,Twelve-month historical rolling mean of freight index,Feature engineering
+Aluminum_Lag_1,Previous-month aluminum price,Feature engineering
+"Coal, Australian_Lag_1",Previous-month Australian coal price,Feature engineering
+"Coal, South African **_Lag_1",Previous-month South African coal price,Feature engineering
+Copper_Lag_1,Previous-month copper price,Feature engineering
+"Crude oil, Brent_Lag_1",Previous-month Brent crude oil price,Feature engineering
+"Iron ore, cfr spot_Lag_1",Previous-month iron ore price,Feature engineering
+"Natural gas, Europe_Lag_1",Previous-month European natural gas price,Feature engineering
+Soybeans_Lag_1,Previous-month soybean price,Feature engineering
+"Wheat, US HRW_Lag_1",Previous-month US HRW wheat price,Feature engineering
+India_Dry_Cargo_Loaded_Lag_1,Previous-month India dry cargo loaded indicator,Feature engineering
+India_Dry_Cargo_Discharged_Lag_1,Previous-month India dry cargo discharged indicator,Feature engineering
+Month,Calendar month number,Calendar feature
+Quarter,Calendar quarter number,Calendar feature
+Year,Calendar year,Calendar feature
+Target_Freight_Next_Month,Next month's freight index value used as the supervised learning target,Target variable

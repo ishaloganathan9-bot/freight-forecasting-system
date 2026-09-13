@@ -1,0 +1,40 @@
+{
+    "model_version": "xgboost_v1.0",
+    "model_type": "XGBoost Regressor",
+    "target": "Target_Freight_Next_Month",
+    "forecast_target": "Baltic Dry Index",
+    "forecast_horizon": "1 month",
+    "features": [
+        "Freight_Index",
+        "Freight_Lag_1",
+        "Freight_Lag_3",
+        "Freight_Lag_6",
+        "Freight_Lag_12",
+        "Freight_Rolling_Mean_3",
+        "Freight_Rolling_Mean_6",
+        "Freight_Rolling_Mean_12",
+        "Aluminum_Lag_1",
+        "Coal, Australian_Lag_1",
+        "Coal, South African **_Lag_1",
+        "Copper_Lag_1",
+        "Crude oil, Brent_Lag_1",
+        "Iron ore, cfr spot_Lag_1",
+        "Natural gas, Europe_Lag_1",
+        "Soybeans_Lag_1",
+        "Wheat, US HRW_Lag_1",
+        "India_Dry_Cargo_Loaded_Lag_1",
+        "India_Dry_Cargo_Discharged_Lag_1",
+        "Month",
+        "Quarter",
+        "Year"
+    ],
+    "training_start": "2012-01-01",
+    "training_end": "2023-01-01",
+    "test_start": "2023-02-01",
+    "test_end": "2025-11-01",
+    "metrics": {
+        "MAE": 331.15,
+        "RMSE": 462.5,
+        "MAPE": 19.89
+    }
+}
