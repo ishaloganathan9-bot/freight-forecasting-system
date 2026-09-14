@@ -1,0 +1,23 @@
+Dataset: port_routes.csv
+
+Purpose:
+Prototype sea-route distance reference for the SIH decision-support system.
+
+Routes:
+Newcastle, Australia -> Paradip
+Newcastle, Australia -> Visakhapatnam
+Richards Bay, South Africa -> Paradip
+Richards Bay, South Africa -> Visakhapatnam
+
+Status:
+Prototype reference values.
+
+Important:
+The distances in this dataset are not treated as authoritative navigational
+or berth-to-berth sea-route distances.
+
+For a production deployment, route distances should be obtained from a
+validated maritime routing service/API using port/UN LOCODE information.
+
+Current use:
+Demonstration, testing and prototype voyage calculations only.

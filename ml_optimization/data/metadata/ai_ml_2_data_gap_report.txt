@@ -1,0 +1,226 @@
+AI/ML 2 DATA GAP REPORT
+=======================
+
+Purpose:
+Identify the source or treatment of every data input required by
+the AI/ML 2 Vessel, Voyage, Cost, Risk, Optimization and Recommendation system.
+
+1. VESSEL DATA
+--------------
+Vessel type:
+Source = data/processed/vessels/vessels_cleaned.csv
+Status = AVAILABLE
+
+DWT:
+Source = data/processed/vessels/vessels_cleaned.csv
+Status = AVAILABLE
+
+LOA:
+Source = data/processed/vessels/vessels_cleaned.csv
+Status = AVAILABLE
+
+Beam:
+Source = data/processed/vessels/vessels_cleaned.csv
+Status = AVAILABLE
+
+Draft:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP
+
+Speed:
+Source = IMO bulk carrier reference
+Status = REFERENCE AVAILABLE
+Note = Current source provides average speed by DWT category, not vessel-specific speed.
+
+Vessel-specific fuel consumption:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP / OPTIONAL IMPROVEMENT
+Note = Current system uses bulk-carrier size-category reference values.
+
+
+2. CARGO DATA
+-------------
+Cargo type:
+Source = User input / cargo_vessel_compatibility.csv
+Status = AVAILABLE
+
+Cargo quantity:
+Source = User input
+Status = AVAILABLE
+
+Cargo-vessel compatibility:
+Source = data/raw/cargo/cargo_vessel_compatibility.csv
+Status = AVAILABLE
+
+
+3. PORT DATA
+------------
+Port locations:
+Source = data/processed/ports/port_locations_cleaned.csv
+Status = AVAILABLE
+
+Paradip berth restrictions:
+Source = data/raw/ports/official/paradip_berth_restrictions.csv
+Status = AVAILABLE
+
+Visakhapatnam berth restrictions:
+Source = data/raw/ports/official/visakhapatnam_port_restrictions.csv
+Status = PARTIALLY AVAILABLE
+
+Visakhapatnam beam restriction:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP
+
+Port congestion / waiting:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP
+
+
+4. ROUTE DATA
+-------------
+Origin:
+Source = User input
+Status = AVAILABLE
+
+Destination:
+Source = User input
+
+Sea-route distance:
+Source = data/raw/routes/port_routes.csv
+Status = PROTOTYPE ONLY
+
+Production maritime route distance:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP
+
+Note:
+port_routes.csv must not be treated as authoritative navigational distance.
+
+
+5. FUEL DATA
+------------
+Fuel consumption reference:
+Source = data/raw/fuel/imo_bulk_carrier_fuel_reference.csv
+Status = AVAILABLE
+
+Fuel price:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP
+
+Note:
+Fuel price must not be hardcoded in production.
+
+
+6. EMISSIONS DATA
+-----------------
+CO2 calculation reference:
+Source = Current IMO bulk-carrier reference dataset
+Status = PARTIALLY AVAILABLE
+
+Dedicated verified CO2 emission factor:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP / REFERENCE CONFIG REQUIRED
+
+
+7. MARKET DATA
+--------------
+Current freight rate:
+Source = AI/ML 1 / market API
+Status = API INPUT
+
+Forecast freight rate:
+Source = AI/ML 1
+Status = API INPUT
+
+Market trend:
+Source = AI/ML 1
+Status = API INPUT
+
+Market volatility:
+Source = AI/ML 1
+Status = API INPUT
+
+Forecast confidence:
+Source = AI/ML 1
+Status = API INPUT
+
+
+8. COST DATA
+------------
+Freight cost:
+Source = Calculated from cargo quantity × freight rate
+Status = CALCULATED
+
+Fuel cost:
+Source = Calculated from fuel consumption × fuel price
+Status = CALCULATED
+
+Waiting cost:
+Source = Calculated from waiting time × waiting cost rate
+Status = CALCULATED
+
+Waiting cost rate:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP / CONFIG OR VERIFIED COST INPUT
+
+Other operational costs:
+Source = NOT CURRENTLY AVAILABLE
+Status = GAP / CONFIG OR VERIFIED COST INPUT
+
+
+9. RISK DATA
+------------
+Feasibility risk:
+Source = Feasibility checks
+Status = CALCULATED
+
+Schedule risk:
+Source = Voyage duration and delivery window
+Status = CALCULATED
+
+Waiting risk:
+Source = Waiting/congestion information
+Status = GAP INPUT
+
+Operational risk:
+Source = Feasibility and operational checks
+Status = CALCULATED
+
+
+10. OPTIMIZATION
+----------------
+Optimization variables:
+Source = User input + datasets + calculated values
+Status = AVAILABLE / CALCULATED
+
+Optimization weights:
+Source = configs/weights.yaml
+Status = CONFIGURATION REQUIRED
+
+Recommendation:
+Source = Optimization results
+Status = CALCULATED
+
+What-if results:
+Source = Recalculation using scenario inputs
+Status = CALCULATED
+
+
+FINAL CONFIRMED DATA GAPS
+=========================
+
+1. Vessel draft
+2. Production maritime route distance
+3. Fuel price
+4. Verified CO2 emission factor/reference
+5. Waiting/congestion information
+6. Visakhapatnam beam restriction
+7. Waiting-cost rate / other operational cost inputs
+
+OPTIONAL IMPROVEMENTS
+
+1. Vessel-specific speed
+2. Vessel-specific fuel consumption
+
+DO NOT DOWNLOAD NEW DATASET UNTIL EACH GAP HAS BEEN
+CLASSIFIED AS DATASET, API INPUT, CONFIGURATION, OR CALCULATION.

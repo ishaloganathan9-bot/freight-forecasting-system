@@ -1,0 +1,9 @@
+cargo_type,compatible_vessel_type,compatibility
+Thermal Coal,Bulk Carrier,Compatible
+Coking Coal,Bulk Carrier,Compatible
+Iron Ore,Bulk Carrier,Compatible
+Limestone,Bulk Carrier,Compatible
+Fertilizer,Bulk Carrier,Compatible
+Coke,Bulk Carrier,Compatible
+Manganese Ore,Bulk Carrier,Compatible
+Bauxite,Bulk Carrier,Compatible

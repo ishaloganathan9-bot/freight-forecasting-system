@@ -1,0 +1,5 @@
+Port: Paradip Port Authority
+Source: Official Paradip Port Authority berth specifications
+Last updated: 23 February 2026
+Data used: Berth name, cargo type, admissible LOA, beam, draft, remarks, handling type, DWT limits
+Purpose: Vessel-port feasibility and berth compatibility analysis
