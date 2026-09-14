@@ -271,6 +271,9 @@ def check_cargo_berth_compatibility(
 ):
     """
     Check whether the berth handles the requested cargo.
+
+    Berth cargo fields may contain multiple cargo categories
+    separated by semicolons.
     """
 
     if pd.isna(cargo_type) or pd.isna(berth_cargo_type):
@@ -282,13 +285,19 @@ def check_cargo_berth_compatibility(
         }
 
     cargo = normalize_text(cargo_type)
-    berth_cargo = normalize_text(berth_cargo_type)
 
-    if cargo == berth_cargo:
+    berth_cargo_items = [
+        normalize_text(item)
+        for item in str(berth_cargo_type).split(";")
+        if normalize_text(item)
+    ]
+
+    if cargo in berth_cargo_items:
         return {
             "status": "PASS",
             "reason": (
-                "Cargo type matches berth cargo type."
+                "Cargo type matches one of the berth "
+                "cargo categories."
             ),
         }
 
@@ -298,21 +307,24 @@ def check_cargo_berth_compatibility(
         "steam coal",
     }
 
-    if cargo == "coal" and berth_cargo in coal_variants:
+    if cargo == "coal" and any(
+        item in coal_variants
+        for item in berth_cargo_items
+    ):
         return {
             "status": "PASS",
             "reason": (
-                "Cargo type is compatible with "
-                "the berth cargo category."
+                "Generic coal cargo is compatible with "
+                "the berth coal category."
             ),
         }
 
-    if berth_cargo == "coal" and cargo in coal_variants:
+    if "coal" in berth_cargo_items and cargo in coal_variants:
         return {
             "status": "PASS",
             "reason": (
-                "Cargo type is compatible with "
-                "the berth cargo category."
+                "Specific coal cargo is compatible with "
+                "the generic berth coal category."
             ),
         }
 
@@ -323,7 +335,6 @@ def check_cargo_berth_compatibility(
             f"berth cargo type '{berth_cargo_type}'."
         ),
     }
-
 
 # ============================================================
 # GENERIC LIMIT CHECK

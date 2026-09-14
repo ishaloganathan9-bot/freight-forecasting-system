@@ -9,6 +9,7 @@ risk:
   feasibility:
     pass_score: 0
     fail_score: 40
+
   schedule:
     unavailable_days_score: 30
     low_ratio_threshold: 0.70
@@ -16,17 +17,25 @@ risk:
     low_score: 0
     medium_score: 15
     high_score: 30
+
   waiting:
     low_hours_threshold: 12
     medium_hours_threshold: 48
     low_score: 0
     medium_score: 10
     high_score: 20
+
   operational:
     default_score: 10
     failed_checks_score: 20
     unknown_checks_score: 10
     pass_score: 0
+
   overall:
     low_threshold: 20
     medium_threshold: 50
+
+market_timing:
+  charter_earlier_penalty_for_wait: 10
+  consider_waiting_bonus_for_wait: 10
+  neutral_adjustment: 0

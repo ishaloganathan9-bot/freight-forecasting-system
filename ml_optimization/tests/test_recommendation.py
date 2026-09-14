@@ -22,7 +22,7 @@ from optimizer import (
 from what_if import build_what_if_result
 
 
-def test_recommendation_is_not_produced_when_baseline_is_infeasible():
+def test_recommendation_is_produced_when_baseline_is_conditional_only():
     demo = get_demo_inputs()
     vessels, _, _, _ = load_data()
 
@@ -46,12 +46,15 @@ def test_recommendation_is_not_produced_when_baseline_is_infeasible():
 
     recommendation = generate_recommendation(selected)
 
-    assert recommendation["status"] == "Not Recommended"
-    assert recommendation["recommended_vessel"] is None
+    assert selected is not None
+    assert selected["status"] == "CONDITIONAL"
+    assert recommendation["status"] == "Recommended"
+    assert recommendation["recommended_vessel"] == selected["vessel_name"]
     assert recommendation["reason"]
+    assert "confirmation is required" in recommendation["reason"].lower()
 
 
-def test_what_if_output_reports_baseline_infeasible_when_no_options_exist():
+def test_what_if_output_reports_completed_comparison_when_options_exist():
     demo = get_demo_inputs()
     vessels, _, _, _ = load_data()
 
@@ -71,9 +74,9 @@ def test_what_if_output_reports_baseline_infeasible_when_no_options_exist():
         what_if_cargo_quantity=demo["what_if_cargo_quantity"],
     )
 
-    assert result["status"] == "BASELINE_INFEASIBLE"
-    assert result["baseline"] is None
-    assert result["what_if"] is None
+    assert result["status"] == "COMPLETED"
+    assert result["baseline"] is not None
+    assert result["what_if"] is not None
     assert result["comparison"] is None
 
 
@@ -97,10 +100,10 @@ def test_infeasible_what_if_scenario_is_handled_correctly():
         what_if_available_days=1,
     )
 
-    assert result["status"] == "BASELINE_INFEASIBLE"
-    assert result["baseline"] is None
-    assert result["what_if"] is None
-    assert result["comparison"] is None
+    assert result["status"] == "SCENARIO_INFEASIBLE"
+    assert result["baseline"] is not None
+    assert result["scenario"] is None
+    assert result["changes"] == {}
 
 
 def test_build_what_if_result_compares_two_feasible_options():

@@ -114,7 +114,7 @@ def test_build_optimization_options_generates_conditional_options_for_current_de
     assert all(option["feasibility"] is False for option in options)
 
 
-def test_optimize_vessel_options_returns_none_when_only_conditional_candidates_exist():
+def test_optimize_vessel_options_uses_conditional_options_as_fallback_pool():
     demo = get_demo_inputs()
     vessels, _, _, _ = load_data()
 
@@ -136,11 +136,13 @@ def test_optimize_vessel_options_returns_none_when_only_conditional_candidates_e
     ranked = rank_vessel_options(options)
     selected = optimize_vessel_options(ranked)
 
-    assert selected is None
+    assert selected is not None
+    assert selected["status"] == "CONDITIONAL"
+    assert selected["optimization_status"] == "OPTIMAL"
     assert all(option["status"] == "CONDITIONAL" for option in options)
 
 
-def test_end_to_end_pipeline_returns_no_recommendation_when_only_conditional_candidates_exist():
+def test_end_to_end_pipeline_uses_conditional_candidates_when_pass_candidates_are_unavailable():
     demo = get_demo_inputs()
     vessels, _, _, _ = load_data()
 
@@ -165,13 +167,14 @@ def test_end_to_end_pipeline_returns_no_recommendation_when_only_conditional_can
     ranked = rank_vessel_options(options)
     selected = optimize_vessel_options(ranked)
 
-    assert selected is None
+    assert selected is not None
+    assert selected["status"] == "CONDITIONAL"
 
     recommendation = generate_recommendation(selected)
 
-    assert recommendation["status"] == "Not Recommended"
-    assert recommendation["recommended_vessel"] is None
-    assert recommendation["reason"]
+    assert recommendation["status"] == "Recommended"
+    assert recommendation["recommended_vessel"] == selected["vessel_name"]
+    assert "confirmation is required" in recommendation["reason"].lower()
 
 
 def test_multi_voyage_end_to_end_pipeline_works():
@@ -202,7 +205,8 @@ def test_multi_voyage_end_to_end_pipeline_works():
     ranked = rank_vessel_options(options)
     selected = optimize_vessel_options(ranked)
 
-    assert selected is None
+    assert selected is not None
+    assert selected["status"] == "CONDITIONAL"
 
 
 def test_destination_change_recalculates_route_and_port_results():
@@ -240,6 +244,7 @@ def test_destination_change_recalculates_route_and_port_results():
     )
 
     assert paradip_options
-    assert vizag_options == []
+    assert vizag_options
+    assert all(option["destination_port"] == "Visakhapatnam" for option in vizag_options)
     assert paradip_options[0]["destination_port"] == "Paradip"
     assert paradip_options[0]["distance_nm"] > 0

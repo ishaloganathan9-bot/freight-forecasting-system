@@ -100,6 +100,10 @@ from what_if import build_what_if_result
 from recommendation import build_recommendation
 
 from explain import build_explanation
+
+from market_signal import build_market_signal
+
+from market_timing import calculate_market_timing_adjustment
 # ============================================================
 # VESSEL CANDIDATES
 # ============================================================
@@ -690,11 +694,16 @@ def build_optimization_options(
     loading_handling_days=0.0,
     berthing_port_days=0.0,
     strategies=None,
+    market_signal=None,
 ):
     """
     Build complete optimization options
     for all feasible vessels using
     a multi-voyage plan when needed.
+
+    AI/ML 1 market forecast is included as a
+    market-timing signal. The BDI forecast is
+    NOT converted into a route-specific freight rate.
     """
 
     candidates = load_vessel_candidates(
@@ -708,6 +717,13 @@ def build_optimization_options(
             freight_rate=freight_rate,
             waiting_hours=waiting_hours,
         )
+
+    # --------------------------------------------------------
+    # AI/ML 1 MARKET SIGNAL
+    # --------------------------------------------------------
+
+    if market_signal is None:
+        market_signal = build_market_signal()
 
     options = []
 
@@ -1214,6 +1230,25 @@ def build_optimization_options(
 
                 "cost_per_tonne": cost_per_tonne,
 
+                # ------------------------------------------------
+                # AI/ML 1 MARKET SIGNAL
+                # ------------------------------------------------
+
+                "market_signal": market_signal.get(
+                    "timing_signal",
+                    "neutral"
+                ),
+
+                "market_trend": market_signal.get(
+                    "trend",
+                    "stable"
+                ),
+
+                "forecast_change_pct": market_signal.get(
+                    "forecast_change_pct",
+                    0.0
+                ),
+
                 "strategy": strategy.get(
                     "strategy",
                     "charter_now"
@@ -1256,38 +1291,32 @@ def build_optimization_options(
     )
 
     return options
-
 # ============================================================
 # SCORE OPTIONS
 # ============================================================
 
+
 def score_options(options):
     """
     Normalize cost, risk, fuel and CO2 across all options.
+    Apply market-timing adjustment to the final score.
     """
 
     if not options:
-
         return []
 
     costs = [
-        option[
-            "total_cost"
-        ]
+        option["total_cost"]
         for option in options
     ]
 
     fuels = [
-        option[
-            "fuel_consumption"
-        ]
+        option["fuel_consumption"]
         for option in options
     ]
 
     co2_values = [
-        option[
-            "co2_emission"
-        ]
+        option["co2_emission"]
         for option in options
     ]
 
@@ -1301,48 +1330,42 @@ def score_options(options):
     max_co2 = max(co2_values)
 
     for option in options:
-
         score_result = evaluate_option(
-            feasible=option[
-                "feasibility"
-            ],
-
-            total_cost=option[
-                "total_cost"
-            ],
-
-            risk_score=option[
-                "overall_risk"
-            ],
-
-            fuel_consumption=option[
-                "fuel_consumption"
-            ],
-
-            co2_emission=option[
-                "co2_emission"
-            ],
-
+            feasible=option["feasibility"],
+            total_cost=option["total_cost"],
+            risk_score=option["overall_risk"],
+            fuel_consumption=option["fuel_consumption"],
+            co2_emission=option["co2_emission"],
             min_cost=min_cost,
             max_cost=max_cost,
-
             min_fuel=min_fuel,
             max_fuel=max_fuel,
-
             min_co2=min_co2,
-            max_co2=max_co2
+            max_co2=max_co2,
         )
 
-        option.update(
-            score_result
+        timing_adjustment = calculate_market_timing_adjustment(
+            strategy=option.get("strategy", ""),
+            timing_signal=option.get(
+                "market_signal",
+                "neutral",
+            ),
         )
 
-        option[
-            "evaluation"
-        ] = classify_score(
-            option[
-                "final_score"
-            ]
+        score_result["market_timing_adjustment"] = round(
+            timing_adjustment,
+            2,
+        )
+
+        score_result["final_score"] = round(
+            score_result["final_score"] + timing_adjustment,
+            2,
+        )
+
+        option.update(score_result)
+
+        option["evaluation"] = classify_score(
+            option["final_score"]
         )
 
     return options
@@ -1372,7 +1395,20 @@ def optimize_vessel_options(
         ) == "PASS"
     ]
 
-    if not pass_options:
+    candidate_options = pass_options
+
+    if not candidate_options:
+
+        candidate_options = [
+            option
+            for option in options
+            if option.get(
+                "status",
+                "UNKNOWN"
+            ) == "CONDITIONAL"
+        ]
+
+    if not candidate_options:
 
         return None
 
@@ -1391,7 +1427,7 @@ def optimize_vessel_options(
     decision_variables = []
 
     for index, option in enumerate(
-        pass_options
+        candidate_options
     ):
 
         variable = solver.BoolVar(
@@ -1419,7 +1455,7 @@ def optimize_vessel_options(
     objective = solver.Objective()
 
     for index, option in enumerate(
-        pass_options
+        candidate_options
     ):
 
         objective.SetCoefficient(
@@ -1452,7 +1488,7 @@ def optimize_vessel_options(
         if variable.solution_value() > 0.5:
 
             selected_option = (
-                pass_options[index]
+                candidate_options[index]
             )
 
             break
@@ -1609,6 +1645,14 @@ def generate_recommendation(
     if overall_port_feasibility != "PASS":
         port_verification_note = (
             f" Port verification status is {overall_port_feasibility.lower()} for LOA, beam, draft, DWT, and cargo compatibility, so the plan remains partially unverified."
+        )
+
+    if optimized_option.get(
+        "status",
+        "UNKNOWN"
+    ) == "CONDITIONAL":
+        port_verification_note += (
+            " Port and operational confirmation is required before this conditional option can be treated as fully verified."
         )
 
     reason = (
@@ -2335,22 +2379,22 @@ if __name__ == "__main__":
 
         print(
             f"Vessel : "
-            f"{what_if_result['baseline']['vessel']}"
+            f"{what_if_result['baseline']['vessel_name']}"
         )
 
         print(
             f"Score  : "
-            f"{what_if_result['baseline']['score']:.2f}"
+            f"{what_if_result['baseline']['final_score']:.2f}"
         )
 
         print(
             f"Cost   : "
-            f"{what_if_result['baseline']['cost']:.2f}"
+            f"{what_if_result['baseline']['total_cost']:.2f}"
         )
 
         print(
             f"Risk   : "
-            f"{what_if_result['baseline']['risk']:.2f}"
+            f"{what_if_result['baseline']['overall_risk']:.2f}"
         )
 
         print()
@@ -2361,49 +2405,67 @@ if __name__ == "__main__":
 
         print(
             f"Vessel : "
-            f"{what_if_result['what_if']['vessel']}"
+            f"{what_if_result['scenario']['vessel_name']}"
         )
 
         print(
             f"Score  : "
-            f"{what_if_result['what_if']['score']:.2f}"
+            f"{what_if_result['scenario']['final_score']:.2f}"
         )
 
         print(
             f"Cost   : "
-            f"{what_if_result['what_if']['cost']:.2f}"
+            f"{what_if_result['scenario']['total_cost']:.2f}"
         )
 
         print(
             f"Risk   : "
-            f"{what_if_result['what_if']['risk']:.2f}"
+            f"{what_if_result['scenario']['overall_risk']:.2f}"
         )
 
-        print()
-
-        print("IMPACT")
-
-        print("-" * 40)
-
-        print(
-            f"Recommendation Changed : "
-            f"{what_if_result['comparison']['recommendation_changed']}"
+        comparison = what_if_result.get(
+            "comparison"
         )
 
-        print(
-            f"Score Change           : "
-            f"{what_if_result['comparison']['score_change']:.2f}"
-        )
+        if comparison is not None:
 
-        print(
-            f"Cost Change            : "
-            f"{what_if_result['comparison']['cost_change']:.2f}"
-        )
+            print()
 
-        print(
-            f"Risk Change            : "
-            f"{what_if_result['comparison']['risk_change']:.2f}"
-        )
+            print("IMPACT")
+
+            print("-" * 40)
+
+            print(
+                f"Recommendation Changed : "
+                f"{comparison['recommendation_changed']}"
+            )
+
+            print(
+                f"Score Change           : "
+                f"{comparison['score_change']:.2f}"
+            )
+
+            print(
+                f"Cost Change            : "
+                f"{comparison['cost_change']:.2f}"
+            )
+
+            print(
+                f"Risk Change            : "
+                f"{comparison['risk_change']:.2f}"
+            )
+
+        else:
+
+            print()
+
+            print("IMPACT")
+
+            print("-" * 40)
+
+            print(
+                "Comparison data not available for this run."
+            )
 
         print()
 
@@ -2530,22 +2592,22 @@ if __name__ == "__main__":
 
         print(
             f"Vessel : "
-            f"{deadline_what_if['baseline']['vessel']}"
+            f"{deadline_what_if['baseline']['vessel_name']}"
         )
 
         print(
             f"Score  : "
-            f"{deadline_what_if['baseline']['score']:.2f}"
+            f"{deadline_what_if['baseline']['final_score']:.2f}"
         )
 
         print(
             f"Cost   : "
-            f"{deadline_what_if['baseline']['cost']:.2f}"
+            f"{deadline_what_if['baseline']['total_cost']:.2f}"
         )
 
         print(
             f"Risk   : "
-            f"{deadline_what_if['baseline']['risk']:.2f}"
+            f"{deadline_what_if['baseline']['overall_risk']:.2f}"
         )
 
         print()
@@ -2670,7 +2732,7 @@ if __name__ == "__main__":
 
         print(
             f"Vessel : "
-            f"{freight_what_if['baseline']['vessel']}"
+            f"{freight_what_if['baseline']['vessel_name']}"
         )
 
         print(
@@ -2680,7 +2742,7 @@ if __name__ == "__main__":
 
         print(
             f"Cost   : "
-            f"{freight_what_if['baseline']['cost']:.2f}"
+            f"{freight_what_if['baseline']['total_cost']:.2f}"
         )
 
         print()
@@ -2695,12 +2757,12 @@ if __name__ == "__main__":
 
         print(
             f"Vessel       : "
-            f"{freight_what_if['what_if']['vessel']}"
+            f"{freight_what_if['scenario']['vessel_name']}"
         )
 
         print(
             f"Cost         : "
-            f"{freight_what_if['what_if']['cost']:.2f}"
+            f"{freight_what_if['scenario']['total_cost']:.2f}"
         )
 
         print()
@@ -2709,25 +2771,37 @@ if __name__ == "__main__":
 
         print("-" * 40)
 
-        print(
-            f"Recommendation Changed : "
-            f"{freight_what_if['comparison']['recommendation_changed']}"
+        comparison = freight_what_if.get(
+            "comparison"
         )
 
-        print(
-            f"Cost Change            : "
-            f"{freight_what_if['comparison']['cost_change']:.2f}"
-        )
+        if comparison is not None:
 
-        print(
-            f"Score Change           : "
-            f"{freight_what_if['comparison']['score_change']:.2f}"
-        )
+            print(
+                f"Recommendation Changed : "
+                f"{comparison['recommendation_changed']}"
+            )
 
-        print(
-            f"Risk Change            : "
-            f"{freight_what_if['comparison']['risk_change']:.2f}"
-        )
+            print(
+                f"Cost Change            : "
+                f"{comparison['cost_change']:.2f}"
+            )
+
+            print(
+                f"Score Change           : "
+                f"{comparison['score_change']:.2f}"
+            )
+
+            print(
+                f"Risk Change            : "
+                f"{comparison['risk_change']:.2f}"
+            )
+
+        else:
+
+            print(
+                "Comparison data not available for this run."
+            )
 
         # ----------------------------------------------------
         # VALIDATION
@@ -2739,14 +2813,14 @@ if __name__ == "__main__":
         )
 
         actual_cost_change = (
-            freight_what_if[
-                "comparison"
-            ][
-                "cost_change"
-            ]
+            comparison["cost_change"]
+            if comparison is not None and "cost_change" in comparison
+            else None
         )
 
         freight_validation = (
+            actual_cost_change is not None
+            and
             actual_cost_change
             ==
             expected_cost_change
@@ -2839,7 +2913,7 @@ if __name__ == "__main__":
 
         print(
             f"Vessel      : "
-            f"{fuel_what_if['baseline']['vessel']}"
+            f"{fuel_what_if['baseline']['vessel_name']}"
         )
 
         print(
@@ -2849,7 +2923,7 @@ if __name__ == "__main__":
 
         print(
             f"Cost        : "
-            f"{fuel_what_if['baseline']['cost']:.2f}"
+            f"{fuel_what_if['baseline']['total_cost']:.2f}"
         )
 
         print()
@@ -2861,12 +2935,12 @@ if __name__ == "__main__":
 
         print(
             f"Vessel      : "
-            f"{fuel_what_if['what_if']['vessel']}"
+            f"{fuel_what_if['scenario']['vessel_name']}"
         )
 
         print(
             f"Cost        : "
-            f"{fuel_what_if['what_if']['cost']:.2f}"
+            f"{fuel_what_if['scenario']['total_cost']:.2f}"
         )
 
         print()
@@ -2874,25 +2948,37 @@ if __name__ == "__main__":
         print("IMPACT")
         print("-" * 40)
 
-        print(
-            f"Recommendation Changed : "
-            f"{fuel_what_if['comparison']['recommendation_changed']}"
+        comparison = fuel_what_if.get(
+            "comparison"
         )
 
-        print(
-            f"Cost Change            : "
-            f"{fuel_what_if['comparison']['cost_change']:.2f}"
-        )
+        if comparison is not None:
 
-        print(
-            f"Score Change           : "
-            f"{fuel_what_if['comparison']['score_change']:.2f}"
-        )
+            print(
+                f"Recommendation Changed : "
+                f"{comparison['recommendation_changed']}"
+            )
 
-        print(
-            f"Risk Change            : "
-            f"{fuel_what_if['comparison']['risk_change']:.2f}"
-        )
+            print(
+                f"Cost Change            : "
+                f"{comparison['cost_change']:.2f}"
+            )
+
+            print(
+                f"Score Change           : "
+                f"{comparison['score_change']:.2f}"
+            )
+
+            print(
+                f"Risk Change            : "
+                f"{comparison['risk_change']:.2f}"
+            )
+
+        else:
+
+            print(
+                "Comparison data not available for this run."
+            )
 
         # ----------------------------------------------------
         # VALIDATION
